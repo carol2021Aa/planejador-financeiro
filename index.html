@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>💰 Planejador Financeiro 2026</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0D0D1A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#E0E0FF;min-height:100vh}
+input,select,button{font-family:inherit}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#1A1A2E}
+::-webkit-scrollbar-thumb{background:#3D3D6E;border-radius:3px}
+select option{background:#1A1A2E;color:#E0E0FF}
+
+.header{background:linear-gradient(135deg,#1A1A3E,#0D0D1A);border-bottom:1px solid #2D2D4E;padding:16px}
+.header-title{font-size:20px;font-weight:800;background:linear-gradient(90deg,#6C63FF,#43BF9E);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.header-sub{color:#7070A0;font-size:12px;margin-top:2px}
+.nav-row{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.nav-btn{padding:6px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600}
+.month-row{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.month-btn{padding:4px 10px;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;border:1px solid #2D2D4E;background:#1A1A2E;color:#8080B0}
+.month-btn.active{background:#6C63FF;color:#fff;border-color:#6C63FF}
+.week-row{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.week-btn{padding:4px 10px;border-radius:8px;cursor:pointer;font-size:11px;border:1px solid #2D2D4E;background:#1A1A2E;color:#8080B0;white-space:nowrap}
+.week-btn.active{background:rgba(67,191,158,0.15);color:#43BF9E;border-color:#43BF9E}
+
+.content{max-width:900px;margin:0 auto;padding:16px}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+@media(min-width:600px){.cards{grid-template-columns:repeat(4,1fr)}}
+.card{background:#16213E;border-radius:12px;padding:12px 14px}
+.card-label{font-size:10px;color:#7070A0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.card-value{font-size:16px;font-weight:800;letter-spacing:-.5px}
+.card-value.big{font-size:20px}
+
+.section-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:700px){.section-grid{grid-template-columns:repeat(3,1fr)}}
+.box{background:#16213E;border-radius:12px;padding:14px;margin-bottom:12px}
+.box-title{font-weight:700;font-size:14px;margin-bottom:10px}
+.entry-row{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.inp{padding:6px 8px;border-radius:8px;border:1px solid #2D2D4E;background:#1A1A2E;color:#E0E0FF;font-size:12px;flex:1;min-width:0;outline:none}
+.inp-cat{flex:0 0 110px;width:110px}
+.inp-val{flex:0 0 90px;width:90px;text-align:right}
+.btn-remove{background:rgba(255,101,132,0.15);border:none;color:#FF6584;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px;flex-shrink:0}
+.btn-add{border-radius:8px;padding:5px 12px;cursor:pointer;font-size:12px;margin-top:4px;border:1px solid}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{padding:7px 10px;color:#7070A0;font-weight:600;border-bottom:1px solid #2D2D4E}
+td{padding:7px 10px;border-bottom:1px solid #1A1A2E}
+.tr-total{border-top:2px solid #3D3D6E;background:#1A1A2E}
+.tr-total td{font-weight:700}
+.ta-r{text-align:right}
+
+.chart-wrap{width:100%;overflow-x:auto;margin-top:8px}
+svg.chart{display:block}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px}
+.legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px}
+
+.empty{text-align:center;padding:24px 0;color:#6060A0;font-size:13px}
+.pie-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pie-legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:#A0A0C0}
+</style>
+</head>
+<body>
+
+<div class="header" id="header">
+  <div class="header-title">💰 Planejador Financeiro</div>
+  <div class="header-sub">Semanas começam na segunda-feira · 2026</div>
+  <div class="nav-row" id="navRow"></div>
+  <div class="month-row" id="monthRow"></div>
+  <div class="week-row" id="weekRow"></div>
+</div>
+
+<div class="content" id="content"></div>
+
+<script>
+const YEAR = 2026;
+const MONTHS = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const EXP_CATS = ["Alimentação","Transporte","Moradia","Saúde","Lazer","Educação","Vestuário","Outros"];
+const INC_CATS = ["Salário","Freelance","Dividendos","Outros"];
+const INV_CATS = ["Renda Fixa","Ações","FIIs","Cripto","Poupança","Outros"];
+const COLORS = ["#6C63FF","#FF6584","#43BF9E","#FFB347","#4ECDC4","#C7F2A4","#FF6B6B","#A8DADC"];
+const GREEN="#43BF9E", RED="#FF6584", GOLD="#FFB347", PURPLE="#6C63FF";
+
+let state = {
+  view: "semana",
+  month: new Date().getMonth(),
+  week: 0,
+  data: {}
+};
+
+// Load saved data
+try { const s = localStorage.getItem("pfin2026"); if(s) state.data = JSON.parse(s); } catch{}
+
+function save() {
+  try { localStorage.setItem("pfin2026", JSON.stringify(state.data)); } catch{}
+}
+
+function fmt(v) {
+  return new Intl.NumberFormat("pt-PT",{style:"currency",currency:"EUR"}).format(v||0);
+}
+
+function getWeeks(month) {
+  const weeks = [];
+  let start = new Date(YEAR, month, 1);
+  const dow = start.getDay();
+  if(dow !== 1) { const d = dow===0?1:8-dow; start.setDate(start.getDate()+d); }
+  let n = 1;
+  while(start.getMonth()===month && n<=6) {
+    const end = new Date(start); end.setDate(end.getDate()+6);
+    const p = d => `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}`;
+    weeks.push({id:`${YEAR}-${month}-${n}`, label:`Sem ${n} (${p(start)}–${p(end)})`, n});
+    n++; start = new Date(start); start.setDate(start.getDate()+7);
+  }
+  return weeks;
+}
+
+function getWD(month, wid) {
+  return (state.data[month]&&state.data[month][wid]) || {income:[],expense:[],invest:[]};
+}
+function setWD(month, wid, wd) {
+  if(!state.data[month]) state.data[month]={};
+  state.data[month][wid] = wd;
+  save();
+}
+
+let _id = Date.now();
+function newEntry(type) {
+  const cats = type==="income"?INC_CATS:type==="expense"?EXP_CATS:INV_CATS;
+  return {id:++_id, type, desc:"", cat:cats[0], amount:0};
+}
+
+function sum(arr) { return arr.reduce((s,e)=>s+(parseFloat(e.amount)||0),0); }
+
+// ---- RENDER ----
+function render() {
+  renderHeader();
+  renderContent();
+}
+
+function renderHeader() {
+  // Nav
+  const navRow = document.getElementById("navRow");
+  navRow.innerHTML = "";
+  [["semana","📅 Semanal"],["mes","📊 Mensal"],["ano","🗓️ Anual"]].forEach(([v,l])=>{
+    const b = document.createElement("button");
+    b.className="nav-btn";
+    b.textContent=l;
+    b.style.background = state.view===v?"#6C63FF":"#1A1A2E";
+    b.style.color = state.view===v?"#fff":"#9090C0";
+    b.onclick=()=>{ state.view=v; render(); };
+    navRow.appendChild(b);
+  });
+
+  // Months
+  const mRow = document.getElementById("monthRow");
+  mRow.innerHTML="";
+  MONTHS.forEach((m,i)=>{
+    const b=document.createElement("button");
+    b.className="month-btn"+(state.month===i?" active":"");
+    b.textContent=m.slice(0,3);
+    b.onclick=()=>{ state.month=i; state.week=0; render(); };
+    mRow.appendChild(b);
+  });
+
+  // Weeks
+  const wRow = document.getElementById("weekRow");
+  wRow.innerHTML="";
+  if(state.view==="semana") {
+    getWeeks(state.month).forEach((w,i)=>{
+      const b=document.createElement("button");
+      b.className="week-btn"+(state.week===i?" active":"");
+      b.textContent=w.label;
+      b.onclick=()=>{ state.week=i; render(); };
+      wRow.appendChild(b);
+    });
+  }
+}
+
+function renderContent() {
+  const el = document.getElementById("content");
+  if(state.view==="semana") el.innerHTML = renderWeek();
+  else if(state.view==="mes") el.innerHTML = renderMonth();
+  else el.innerHTML = renderYear();
+  attachEvents();
+}
+
+function renderWeek() {
+  const weeks = getWeeks(state.month);
+  const wk = weeks[state.week];
+  if(!wk) return "<p style='color:#7070A0;padding:20px'>Nenhuma semana disponível.</p>";
+  const wd = getWD(state.month, wk.id);
+  const inc=sum(wd.income), exp=sum(wd.expense), inv=sum(wd.invest), bal=inc-exp-inv;
+
+  return `
+  <div class="cards">
+    ${card("💵","Ganhos",fmt(inc),GREEN)}
+    ${card("💸","Despesas",fmt(exp),RED)}
+    ${card("📈","Investimentos",fmt(inv),GOLD)}
+    ${card("🏦","Saldo",fmt(bal),bal>=0?GREEN:RED,true)}
+  </div>
+  <div class="section-grid">
+    ${sectionBox("income","💵 Ganhos",GREEN,wd.income)}
+    ${sectionBox("expense","💸 Despesas",RED,wd.expense)}
+    ${sectionBox("invest","📈 Investimentos",GOLD,wd.invest)}
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📊 Visão da Semana</div>
+    ${barChart([{name:wk.label.split("(")[0].trim(),Ganhos:inc,Despesas:exp,Investimentos:inv}],220)}
+  </div>`;
+}
+
+function renderMonth() {
+  const weeks = getWeeks(state.month);
+  let totInc=0,totExp=0,totInv=0;
+  const rows = weeks.map(w=>{
+    const d=getWD(state.month,w.id);
+    const i=sum(d.income),e=sum(d.expense),v=sum(d.invest);
+    totInc+=i;totExp+=e;totInv+=v;
+    return {name:`Sem ${w.n}`,Ganhos:i,Despesas:e,Investimentos:v,Saldo:i-e-v};
+  });
+  const mBal=totInc-totExp-totInv;
+  const expCat={},invCat={};
+  weeks.forEach(w=>{
+    const d=getWD(state.month,w.id);
+    d.expense.forEach(e=>expCat[e.cat]=(expCat[e.cat]||0)+(parseFloat(e.amount)||0));
+    d.invest.forEach(e=>invCat[e.cat]=(invCat[e.cat]||0)+(parseFloat(e.amount)||0));
+  });
+
+  return `
+  <div style="color:#A0A0C0;font-weight:700;font-size:16px;margin-bottom:14px">📅 ${MONTHS[state.month]} ${YEAR}</div>
+  <div class="cards">
+    ${card("💵","Ganhos do mês",fmt(totInc),GREEN)}
+    ${card("💸","Despesas",fmt(totExp),RED)}
+    ${card("📈","Investido",fmt(totInv),GOLD)}
+    ${card("🏦","Saldo",fmt(mBal),mBal>=0?GREEN:RED,true)}
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📊 Semanas do mês</div>
+    ${barChart(rows,220)}
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📈 Saldo por semana</div>
+    ${lineChart(rows,150)}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="box">
+      <div class="box-title" style="color:#A0A0C0">🍕 Despesas</div>
+      ${pieChart(expCat)}
+    </div>
+    <div class="box">
+      <div class="box-title" style="color:#A0A0C0">💎 Investimentos</div>
+      ${pieChart(invCat)}
+    </div>
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📋 Tabela Semanal</div>
+    <div style="overflow-x:auto">${tableHTML(rows,["Semana","Ganhos","Despesas","Investimentos","Saldo"],totInc,totExp,totInv,mBal)}</div>
+  </div>`;
+}
+
+function renderYear() {
+  const rows = MONTHS.map((_,mi)=>{
+    const ws=getWeeks(mi);
+    let i=0,e=0,v=0;
+    ws.forEach(w=>{const d=getWD(mi,w.id);i+=sum(d.income);e+=sum(d.expense);v+=sum(d.invest);});
+    return {name:MONTHS[mi].slice(0,3),Ganhos:i,Despesas:e,Investimentos:v,Saldo:i-e-v};
+  });
+  const tI=rows.reduce((s,r)=>s+r.Ganhos,0);
+  const tE=rows.reduce((s,r)=>s+r.Despesas,0);
+  const tV=rows.reduce((s,r)=>s+r.Investimentos,0);
+  const tB=rows.reduce((s,r)=>s+r.Saldo,0);
+
+  return `
+  <div style="color:#A0A0C0;font-weight:700;font-size:16px;margin-bottom:14px">🗓️ Visão Anual — ${YEAR}</div>
+  <div class="cards">
+    ${card("💵","Total Ganhos",fmt(tI),GREEN)}
+    ${card("💸","Total Despesas",fmt(tE),RED)}
+    ${card("📈","Total Investido",fmt(tV),GOLD)}
+    ${card("🏦","Saldo do Ano",fmt(tB),tB>=0?GREEN:RED,true)}
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📊 Mês a mês</div>
+    ${barChart(rows,240)}
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📈 Saldo ao longo do ano</div>
+    ${lineChart(rows,160)}
+  </div>
+  <div class="box">
+    <div class="box-title" style="color:#A0A0C0">📋 Resumo por mês</div>
+    <div style="overflow-x:auto">${tableHTML(rows,["Mês","Ganhos","Despesas","Investimentos","Saldo"],tI,tE,tV,tB)}</div>
+  </div>`;
+}
+
+function card(icon,label,value,color,big=false) {
+  return `<div class="card" style="border:1px solid ${color}33">
+    <div class="card-label">${icon} ${label}</div>
+    <div class="card-value${big?" big":""}" style="color:${color}">${value}</div>
+  </div>`;
+}
+
+function sectionBox(type,title,color,entries) {
+  const cats = type==="income"?INC_CATS:type==="expense"?EXP_CATS:INV_CATS;
+  const btnCol = type==="income"?"67,191,158":type==="expense"?"255,101,132":"255,179,71";
+  const label = type==="income"?"ganho":type==="expense"?"despesa":"investimento";
+  let rows = entries.map(e=>`
+    <div class="entry-row" data-id="${e.id}" data-type="${type}">
+      <input class="inp e-desc" placeholder="Descrição" value="${esc(e.desc)}"/>
+      <select class="inp inp-cat e-cat">${cats.map(c=>`<option${c===e.cat?" selected":""}>${c}</option>`).join("")}</select>
+      <input class="inp inp-val e-amt" type="number" min="0" step="0.01" placeholder="0,00" value="${e.amount||""}"/>
+      <button class="btn-remove e-rem">✕</button>
+    </div>`).join("");
+  return `<div class="box">
+    <div class="box-title" style="color:${color}">${title}</div>
+    <div id="entries-${type}">${rows}</div>
+    <button class="btn-add" style="background:rgba(${btnCol},0.12);border-color:rgba(${btnCol},0.3);color:rgb(${btnCol})" data-addtype="${type}">+ Adicionar ${label}</button>
+  </div>`;
+}
+
+function attachEvents() {
+  // Add buttons
+  document.querySelectorAll("[data-addtype]").forEach(btn=>{
+    btn.onclick=()=>{
+      const type=btn.dataset.addtype;
+      const weeks=getWeeks(state.month);
+      const wk=weeks[state.week];
+      if(!wk) return;
+      const wd=getWD(state.month,wk.id);
+      wd[type].push(newEntry(type));
+      setWD(state.month,wk.id,wd);
+      render();
+    };
+  });
+
+  // Entry inputs
+  document.querySelectorAll(".entry-row").forEach(row=>{
+    const id=parseInt(row.dataset.id);
+    const type=row.dataset.type;
+    const weeks=getWeeks(state.month);
+    const wk=weeks[state.week];
+    if(!wk) return;
+
+    row.querySelector(".e-desc").oninput=e=>{
+      const wd=getWD(state.month,wk.id);
+      const en=wd[type].find(x=>x.id===id); if(en) en.desc=e.target.value;
+      setWD(state.month,wk.id,wd);
+      // Don't re-render to keep focus
+      updateCards();
+    };
+    row.querySelector(".e-cat").onchange=e=>{
+      const wd=getWD(state.month,wk.id);
+      const en=wd[type].find(x=>x.id===id); if(en) en.cat=e.target.value;
+      setWD(state.month,wk.id,wd);
+    };
+    row.querySelector(".e-amt").oninput=e=>{
+      const wd=getWD(state.month,wk.id);
+      const en=wd[type].find(x=>x.id===id); if(en) en.amount=parseFloat(e.target.value)||0;
+      setWD(state.month,wk.id,wd);
+      updateCards();
+    };
+    row.querySelector(".e-rem").onclick=()=>{
+      const wd=getWD(state.month,wk.id);
+      wd[type]=wd[type].filter(x=>x.id!==id);
+      setWD(state.month,wk.id,wd);
+      render();
+    };
+  });
+}
+
+function updateCards() {
+  if(state.view!=="semana") return;
+  const weeks=getWeeks(state.month);
+  const wk=weeks[state.week]; if(!wk) return;
+  const wd=getWD(state.month,wk.id);
+  const inc=sum(wd.income),exp=sum(wd.expense),inv=sum(wd.invest),bal=inc-exp-inv;
+  const vals=[fmt(inc),fmt(exp),fmt(inv),fmt(bal)];
+  const colors=[GREEN,RED,GOLD,bal>=0?GREEN:RED];
+  document.querySelectorAll(".card-value").forEach((el,i)=>{
+    el.textContent=vals[i]; el.style.color=colors[i];
+  });
+}
+
+function esc(s){ return (s||"").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;"); }
+
+// ---- CHARTS (SVG) ----
+function barChart(data, h=200) {
+  const W=Math.min(window.innerWidth-48, 860);
+  const pad={t:10,r:10,b:30,l:52};
+  const iW=W-pad.l-pad.r, iH=h-pad.t-pad.b;
+  const keys=["Ganhos","Despesas","Investimentos"];
+  const clrs=[GREEN,RED,GOLD];
+  const allVals=data.flatMap(d=>keys.map(k=>d[k]||0));
+  const maxV=Math.max(...allVals,1);
+  const bw=Math.max(8, (iW/data.length)*0.25);
+  const gap=(iW/data.length);
+
+  let bars="",labels="",yticks="";
+  const ticks=4;
+  for(let i=0;i<=ticks;i++){
+    const v=maxV*i/ticks;
+    const y=pad.t+iH-(iH*i/ticks);
+    yticks+=`<line x1="${pad.l}" x2="${pad.l+iW}" y1="${y}" y2="${y}" stroke="#2D2D4E" stroke-dasharray="3,3"/>
+    <text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="10" fill="#7070A0">€${(v/1000).toFixed(1)}k</text>`;
+  }
+
+  data.forEach((d,di)=>{
+    const cx=pad.l+gap*(di+0.5);
+    keys.forEach((k,ki)=>{
+      const v=d[k]||0;
+      const bh=iH*(v/maxV);
+      const x=cx+(ki-1)*(bw+2);
+      bars+=`<rect x="${x-bw/2}" y="${pad.t+iH-bh}" width="${bw}" height="${bh}" fill="${clrs[ki]}" rx="3"/>`;
+    });
+    labels+=`<text x="${cx}" y="${pad.t+iH+18}" text-anchor="middle" font-size="10" fill="#7070A0">${d.name}</text>`;
+  });
+
+  const legend=keys.map((k,i)=>`<circle cx="8" cy="8" r="5" fill="${clrs[i]}"/><text x="16" y="12" font-size="11" fill="#C0C0E0">${k}</text>`
+    .replace('cx="8"',`cx="${i*90+8}"`).replace('x="16"',`x="${i*90+16}"`)).join("");
+
+  return `<div class="chart-wrap"><svg class="chart" width="${W}" height="${h+20}" viewBox="0 0 ${W} ${h+20}">
+    <g>${yticks}</g><g>${bars}</g><g>${labels}</g>
+    <g transform="translate(${pad.l},${h+2})">${legend}</g>
+  </svg></div>`;
+}
+
+function lineChart(data, h=150) {
+  const W=Math.min(window.innerWidth-48, 860);
+  const pad={t:10,r:10,b:30,l:52};
+  const iW=W-pad.l-pad.r, iH=h-pad.t-pad.b;
+  const vals=data.map(d=>d.Saldo);
+  const minV=Math.min(...vals,0), maxV=Math.max(...vals,1);
+  const range=maxV-minV||1;
+
+  const pts=data.map((d,i)=>{
+    const x=pad.l+iW*(i/(data.length-1||1));
+    const y=pad.t+iH-(iH*(d.Saldo-minV)/range);
+    return `${x},${y}`;
+  });
+
+  let yticks="";
+  for(let i=0;i<=3;i++){
+    const v=minV+range*i/3;
+    const y=pad.t+iH-(iH*i/3);
+    yticks+=`<line x1="${pad.l}" x2="${pad.l+iW}" y1="${y}" y2="${y}" stroke="#2D2D4E" stroke-dasharray="3,3"/>
+    <text x="${pad.l-4}" y="${y+4}" text-anchor="end" font-size="10" fill="#7070A0">${fmt(v).replace("€","€")}</text>`;
+  }
+
+  const labels=data.map((d,i)=>{
+    const x=pad.l+iW*(i/(data.length-1||1));
+    return `<text x="${x}" y="${pad.t+iH+18}" text-anchor="middle" font-size="10" fill="#7070A0">${d.name}</text>`;
+  }).join("");
+
+  const dots=data.map((d,i)=>{
+    const x=pad.l+iW*(i/(data.length-1||1));
+    const y=pad.t+iH-(iH*(d.Saldo-minV)/range);
+    return `<circle cx="${x}" cy="${y}" r="4" fill="${PURPLE}"/>`;
+  }).join("");
+
+  return `<div class="chart-wrap"><svg class="chart" width="${W}" height="${h}" viewBox="0 0 ${W} ${h}">
+    ${yticks}
+    <polyline points="${pts.join(" ")}" fill="none" stroke="${PURPLE}" stroke-width="2.5" stroke-linejoin="round"/>
+    ${dots}${labels}
+  </svg></div>`;
+}
+
+function pieChart(catObj) {
+  const entries=Object.entries(catObj).filter(([,v])=>v>0);
+  if(!entries.length) return `<div class="empty">📭 Sem dados</div>`;
+  const total=entries.reduce((s,[,v])=>s+v,0);
+  const size=140, cx=size/2, cy=size/2, r=55;
+  let startAngle=-Math.PI/2, slices="";
+  entries.forEach(([k,v],i)=>{
+    const angle=(v/total)*2*Math.PI;
+    const x1=cx+r*Math.cos(startAngle), y1=cy+r*Math.sin(startAngle);
+    const x2=cx+r*Math.cos(startAngle+angle), y2=cy+r*Math.sin(startAngle+angle);
+    const large=angle>Math.PI?1:0;
+    slices+=`<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z" fill="${COLORS[i%COLORS.length]}"/>`;
+    startAngle+=angle;
+  });
+  const legend=entries.map(([k,v],i)=>`<div class="pie-legend-item"><div style="width:10px;height:10px;border-radius:50%;background:${COLORS[i%COLORS.length]};flex-shrink:0"></div>${k}: ${fmt(v)}</div>`).join("");
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${slices}</svg>
+  <div class="pie-legend">${legend}</div>`;
+}
+
+function tableHTML(rows, headers, tI, tE, tV, tB) {
+  const hRow=headers.map(h=>`<th class="${h!==headers[0]?"ta-r":""}">${h}</th>`).join("");
+  const bodyRows=rows.map(r=>`<tr>
+    <td>${r.name}</td>
+    <td class="ta-r" style="color:${GREEN}">${fmt(r.Ganhos)}</td>
+    <td class="ta-r" style="color:${RED}">${fmt(r.Despesas)}</td>
+    <td class="ta-r" style="color:${GOLD}">${fmt(r.Investimentos)}</td>
+    <td class="ta-r" style="color:${r.Saldo>=0?GREEN:RED};font-weight:700">${fmt(r.Saldo)}</td>
+  </tr>`).join("");
+  return `<table><thead><tr>${hRow}</tr></thead><tbody>${bodyRows}
+  <tr class="tr-total">
+    <td>Total</td>
+    <td class="ta-r" style="color:${GREEN}">${fmt(tI)}</td>
+    <td class="ta-r" style="color:${RED}">${fmt(tE)}</td>
+    <td class="ta-r" style="color:${GOLD}">${fmt(tV)}</td>
+    <td class="ta-r" style="color:${tB>=0?GREEN:RED}">${fmt(tB)}</td>
+  </tr></tbody></table>`;
+}
+
+render();
+</script>
+</body>
+</html>
